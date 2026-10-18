@@ -7,9 +7,9 @@ import About from "@/Comp/About";
 import Catalog from "@/Comp/Catalog";
 import Delivery from "@/Comp/Delivery";
 import OrderForm from "@/Comp/OrderForm";
+import Footer from "@/Comp/Footer";
 
 export default function Home() {
-  // На старте ничего не выбрано (пустые строки)
   const [selectedProduct, setSelectedProduct] = useState("");
   const [selectedDelivery, setSelectedDelivery] = useState("");
 
@@ -30,6 +30,7 @@ export default function Home() {
         selectedProduct={selectedProduct} 
         selectedDelivery={selectedDelivery} 
       />
+      <Footer />
     </main>
   );
 }
