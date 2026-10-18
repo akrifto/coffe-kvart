@@ -102,7 +102,7 @@ export async function POST(request: Request) {
 
     if (botToken && chatId) {
       const message = 
-        `☕ **Новый заказ Kvart Coffee!**\n\n` +
+        `**Новый заказ!**\n\n` +
         `👤 **Имя:** ${newLead.name}\n` +
         `📞 **Телефон:** +${newLead.phone}\n` +
         `📦 **Товар:** ${newLead.product}\n` +
