@@ -1,22 +1,35 @@
-'use client';
-// Импорты
-import Header from '@/Comp/Header';
-import Hero from '@/Comp/Hero';
-import About from '@/Comp/About';
+"use client";
+
+import { useState } from "react";
+import Header from "@/Comp/Header";
+import Hero from "@/Comp/Hero";
+import About from "@/Comp/About";
+import Catalog from "@/Comp/Catalog";
+import Delivery from "@/Comp/Delivery";
+import OrderForm from "@/Comp/OrderForm";
 
 export default function Home() {
+  // На старте ничего не выбрано (пустые строки)
+  const [selectedProduct, setSelectedProduct] = useState("");
+  const [selectedDelivery, setSelectedDelivery] = useState("");
+
   return (
-    
-    // Разметка ко порядку сверху вниз
-    <main className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-muted)] selection:bg-[var(--color-accent)] selection:text-[var(--color-bg)] flex flex-col justify-between">
-      <Header /> 
+    <main className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
+      <Header />
       <Hero />
       <About />
-
-      {/* Футер */}
-      <footer className="border-t border-[var(--color-card)] py-8 px-6 text-center text-[var(--color-text-subtle)] text-sm">
-        © 2026 Kvart Coffee Roaster. Все права защищены.
-      </footer>
+      <Catalog 
+        selectedProduct={selectedProduct} 
+        onSelectProduct={(prod) => setSelectedProduct(prod)} 
+      />
+      <Delivery 
+        selectedDelivery={selectedDelivery} 
+        onSelectDelivery={(del) => setSelectedDelivery(del)} 
+      />
+      <OrderForm 
+        selectedProduct={selectedProduct} 
+        selectedDelivery={selectedDelivery} 
+      />
     </main>
   );
 }
