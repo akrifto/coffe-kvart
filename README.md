@@ -1,36 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+[Живая ссылка на сайт](https://coffe-kvart.vercel.app/)
 
-## Getting Started
+## Стек
+- **Архитектура:** Full-stack монолит на Next.js (TypeScript). Использование Serverless API routes (`/api/lead`) для обработки заявок прямо на Vercel.
+    
+- **Хранение данных:** Запись входящих лидов в JSON-файлы (легковесно, быстро, без развертывания внешней БД вроде SQLite или PostgreSQL).
+    
+- **Интеграция с Telegram:** Автоматическая отправка уведомлений о новых заявках через Telegram Bot API при каждом успешном POST-запросе.
 
-First, run the development server:
+## Валидация и защита от дублей
+* **Белорусские номера:** На фронтенде и бэкенде реализована строгая проверка: номер должен начинаться с `+375` и содержать валидные коды операторов (`29`, `44`, `33`, `25`, `17`). При неверном формате пользователь видит подсказку.
+* **Защита от спама и дублей (10 минут):** Заявки сохраняются в JSON-файлы с таймстампом. Если с одного номера приходит повторный запрос чаще чем раз в 10 минут (или при случайном двойном клике), сервер блокирует дубль.
+* **Уведомления:** Каждая успешная заявка мгновенно дублируется в Telegram-бот с полной информацией о заказе и UTM-метках.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Работа с ИИ и доработки
+* **Роль ИИ:** ИИ помогал генерировать базовую структуру кода (компоненты форм, заготовку API-роута для Next.js).
+* **Ошибки и ручная доработка фронтенда:** ИИ часто терял контекст по стилям, забывал про ховеры, путал состояния кнопок и делал дизайн «вслепую». Все визуальные элементы, плавные переходы, кастомные селекты и адаптив дорабатывались и полировались вручную до «студийного» вида.
+* **Доработки бэкенда:** 
+  * Изначально ИИ предлагал складывать все заявки в один общий JSON-файл. Для надежности и порядка логика была изменена: теперь на каждый новый заказ создается отдельный изолированный файл с таймстампом (`lead_${timestamp}.json`), что исключает коллизии при одновременных запросах на Vercel.
+  * Добавлена строгая валидация кодов белорусских операторов (`29, 44, 33, 25, 17`), чтобы отсекать невалидные номера.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Что сделал бы иначе и допущения
+* **UX номера телефона:** По условиям ТЗ требовалась жесткая валидация белорусских номеров. В реальном проекте лучше сразу зашить префикс `+375` в поле ввода маской, чтобы пользователь не тратил время на ввод кода вручную, а вбивал только цифры оператора и номер.
+* **Логика кофейной подписки (допущение):** В ТЗ указано, что подписка включает бесплатную доставку, но четкого ограничения по выбору способа получения (курьер vs самовывоз) для подписчиков не было. Было принято осознанное допущение оставить выбор способа получения открытым через селект, а все спорные моменты в реальной разработке фиксировать через бриф с заказчиком.
