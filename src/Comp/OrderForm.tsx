@@ -38,6 +38,18 @@ export default function OrderForm({ selectedProduct, selectedDelivery }: OrderFo
     { label: "Самовывоз из ростерии (ул. Короля, 9)", value: "Самовывоз (ул. Короля, 9)" },
   ];
 
+  // Блокировка скролла страницы при открытой модалке успеха
+  useEffect(() => {
+    if (status === "success") {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [status]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (productRef.current && !productRef.current.contains(e.target as Node)) {
@@ -65,7 +77,9 @@ export default function OrderForm({ selectedProduct, selectedDelivery }: OrderFo
 
   const validatePhone = (phone: string) => {
     const cleanPhone = phone.replace(/\D/g, "");
-    return cleanPhone.startsWith("375") && cleanPhone.length === 12;
+    if (!cleanPhone.startsWith("375") || cleanPhone.length !== 12) return false;
+    const operatorCode = cleanPhone.slice(3, 5);
+    return ["29", "44", "33", "25", "17"].includes(operatorCode);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,7 +87,7 @@ export default function OrderForm({ selectedProduct, selectedDelivery }: OrderFo
     setErrorMessage("");
 
     if (!validatePhone(formData.phone)) {
-      setErrorMessage("Введите корректный белорусский номер (+375 (00) 000-00-00)");
+      setErrorMessage("Введите корректный белорусский номер (+375 (29/44/33/25) 000-00-00)");
       return;
     }
 
@@ -118,6 +132,18 @@ export default function OrderForm({ selectedProduct, selectedDelivery }: OrderFo
     }
   };
 
+  // Сброс формы в полностью пустое/дефолтное состояние при закрытии модалки
+  const handleCloseModal = () => {
+    setStatus("idle");
+    setFormData({
+      name: "",
+      phone: "",
+      product: "",
+      delivery: "",
+      comment: "",
+    });
+  };
+
   return (
     <section id="order" className="relative w-full py-16 px-6 sm:px-12 bg-[var(--color-bg)] scroll-mt-24 border-t border-[var(--color-card)]/40">
       <div className="max-w-4xl mx-auto">
@@ -132,159 +158,164 @@ export default function OrderForm({ selectedProduct, selectedDelivery }: OrderFo
         </div>
 
         <div className="p-8 sm:p-10 rounded-3xl bg-[var(--color-card)]/30 border border-[var(--color-card)]">
-          {status === "success" ? (
-            <div className="text-center py-8 space-y-4">
-              <div className="w-16 h-16 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
-                ✓
-              </div>
-              <h3 className="text-2xl font-bold text-[var(--color-text)]">
-                Заявка принята!
-              </h3>
-              <p className="text-[var(--color-text-muted)] max-w-md mx-auto">
-                Спасибо за заказ! Мы вам перезвоним в ближайшее время.
-              </p>
-              <button
-                onClick={() => setStatus("idle")}
-                className="mt-4 px-6 py-2.5 rounded-xl bg-[var(--color-card)] text-[var(--color-text)] text-sm font-semibold hover:bg-[var(--color-card)]/80 transition-colors cursor-pointer"
-              >
-                Отправить еще один заказ
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              
-              {/* Имя и Телефон */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)] mb-2">
-                    Ваше имя *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Имя"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card)] text-[var(--color-text)] placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-accent)] transition-colors text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)] mb-2">
-                    Телефон (Беларусь) *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+375 (00) 000-00-00"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card)] text-[var(--color-text)] placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-accent)] transition-colors text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Кастомный селект: Выбранный кофе */}
-              <div className="relative" ref={productRef}>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)] mb-2">
-                  Что вас интересует? *
-                </label>
-                <div
-                  onClick={() => setIsProductOpen(!isProductOpen)}
-                  className="w-full px-4 py-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-accent)] text-sm cursor-pointer flex justify-between items-center"
-                >
-                  <span className={formData.product ? "text-[var(--color-text)]" : "text-[var(--color-text-subtle)]"}>
-                    {productsOptions.find((p) => p.value === formData.product)?.label || "Выберите кофе из каталога..."}
-                  </span>
-                  <span className="text-xs text-[var(--color-text-subtle)]">▼</span>
-                </div>
-
-                {isProductOpen && (
-                  <div className="absolute z-50 left-0 right-0 mt-2 bg-[#18181b] border border-[var(--color-card)] rounded-xl overflow-hidden shadow-2xl">
-                    {productsOptions.map((opt) => (
-                      <div
-                        key={opt.value}
-                        onClick={() => {
-                          setFormData({ ...formData, product: opt.value });
-                          setIsProductOpen(false);
-                        }}
-                        className="px-4 py-3 text-sm text-[var(--color-text)] hover:bg-[#27272a] transition-colors cursor-pointer"
-                      >
-                        {opt.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Кастомный селект: Способ получения */}
-              <div className="relative" ref={deliveryRef}>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)] mb-2">
-                  Способ получения *
-                </label>
-                <div
-                  onClick={() => setIsDeliveryOpen(!isDeliveryOpen)}
-                  className="w-full px-4 py-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-accent)] text-sm cursor-pointer flex justify-between items-center"
-                >
-                  <span className={formData.delivery ? "text-[var(--color-text)]" : "text-[var(--color-text-subtle)]"}>
-                    {deliveryOptions.find((d) => d.value === formData.delivery)?.label || "Выберите способ получения..."}
-                  </span>
-                  <span className="text-xs text-[var(--color-text-subtle)]">▼</span>
-                </div>
-
-                {isDeliveryOpen && (
-                  <div className="absolute z-50 left-0 right-0 mt-2 bg-[#18181b] border border-[var(--color-card)] rounded-xl overflow-hidden shadow-2xl">
-                    {deliveryOptions.map((opt) => (
-                      <div
-                        key={opt.value}
-                        onClick={() => {
-                          setFormData({ ...formData, delivery: opt.value });
-                          setIsDeliveryOpen(false);
-                        }}
-                        className="px-4 py-3 text-sm text-[var(--color-text)] hover:bg-[#27272a] transition-colors cursor-pointer"
-                      >
-                        {opt.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Комментарий */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* Имя и Телефон */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)] mb-2">
-                  Комментарий к заказу
+                  Ваше имя *
                 </label>
-                <textarea
-                  rows={3}
-                  placeholder="Напишите комментарий (не обязательно)"
-                  value={formData.comment}
-                  onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                  className="w-full px-4 py-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card)] text-[var(--color-text)] placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-accent)] transition-colors text-sm resize-none"
+                <input
+                  type="text"
+                  required
+                  placeholder="Имя"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card)] text-[var(--color-text)] placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-accent)] transition-colors text-sm"
                 />
               </div>
 
-              {/* Вывод ошибок */}
-              {errorMessage && (
-                <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/60 text-red-300 text-sm">
-                  {errorMessage}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)] mb-2">
+                  Телефон (Беларусь) *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="+375 (00) 000-00-00"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-4 py-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card)] text-[var(--color-text)] placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-accent)] transition-colors text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Кастомный селект: Выбранный кофе */}
+            <div className="relative" ref={productRef}>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)] mb-2">
+                Что вас интересует? *
+              </label>
+              <div
+                onClick={() => setIsProductOpen(!isProductOpen)}
+                className="w-full px-4 py-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-accent)] text-sm cursor-pointer flex justify-between items-center"
+              >
+                <span className={formData.product ? "text-[var(--color-text)]" : "text-[var(--color-text-subtle)]"}>
+                  {productsOptions.find((p) => p.value === formData.product)?.label || "Выберите кофе из каталога..."}
+                </span>
+                <span className="text-xs text-[var(--color-text-subtle)]">▼</span>
+              </div>
+
+              {isProductOpen && (
+                <div className="absolute z-50 left-0 right-0 mt-2 bg-[#18181b] border border-[var(--color-card)] rounded-xl overflow-hidden shadow-2xl">
+                  {productsOptions.map((opt) => (
+                    <div
+                      key={opt.value}
+                      onClick={() => {
+                        setFormData({ ...formData, product: opt.value });
+                        setIsProductOpen(false);
+                      }}
+                      className="px-4 py-3 text-sm text-[var(--color-text)] hover:bg-[#27272a] transition-colors cursor-pointer"
+                    >
+                      {opt.label}
+                    </div>
+                  ))}
                 </div>
               )}
+            </div>
 
-              {/* Кнопка отправки */}
-              <button
-                type="submit"
-                disabled={status === "loading"}
-                className="w-full py-4 rounded-xl bg-[var(--color-accent)] text-[var(--color-bg)] font-bold text-base hover:bg-[var(--color-hover-bt)] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            {/* Кастомный селект: Способ получения */}
+            <div className="relative" ref={deliveryRef}>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)] mb-2">
+                Способ получения *
+              </label>
+              <div
+                onClick={() => setIsDeliveryOpen(!isDeliveryOpen)}
+                className="w-full px-4 py-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card)] text-[var(--color-text)] focus:border-[var(--color-accent)] text-sm cursor-pointer flex justify-between items-center"
               >
-                {status === "loading" ? "Отправляем..." : "Подтвердить заказ"}
-              </button>
+                <span className={formData.delivery ? "text-[var(--color-text)]" : "text-[var(--color-text-subtle)]"}>
+                  {deliveryOptions.find((d) => d.value === formData.delivery)?.label || "Выберите способ получения..."}
+                </span>
+                <span className="text-xs text-[var(--color-text-subtle)]">▼</span>
+              </div>
 
-            </form>
-          )}
+              {isDeliveryOpen && (
+                <div className="absolute z-50 left-0 right-0 mt-2 bg-[#18181b] border border-[var(--color-card)] rounded-xl overflow-hidden shadow-2xl">
+                  {deliveryOptions.map((opt) => (
+                    <div
+                      key={opt.value}
+                      onClick={() => {
+                        setFormData({ ...formData, delivery: opt.value });
+                        setIsDeliveryOpen(false);
+                      }}
+                      className="px-4 py-3 text-sm text-[var(--color-text)] hover:bg-[#27272a] transition-colors cursor-pointer"
+                    >
+                      {opt.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Комментарий */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-subtle)] mb-2">
+                Комментарий к заказу
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Напишите комментарий (не обязательно)"
+                value={formData.comment}
+                onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+                className="w-full px-4 py-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card)] text-[var(--color-text)] placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-accent)] transition-colors text-sm resize-none"
+              />
+            </div>
+
+            {/* Вывод ошибок */}
+            {errorMessage && (
+              <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/60 text-red-300 text-sm">
+                {errorMessage}
+              </div>
+            )}
+
+            {/* Кнопка отправки */}
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="w-full py-4 rounded-xl bg-[var(--color-accent)] text-[var(--color-bg)] font-bold text-base hover:bg-[var(--color-hover-bt)] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {status === "loading" ? "Отправляем..." : "Подтвердить заказ"}
+            </button>
+
+          </form>
         </div>
 
       </div>
+
+      {/* Модальное окно успеха с размытием фона и блокировкой скролла */}
+      {status === "success" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md p-8 rounded-3xl bg-[var(--color-bg)] border border-[var(--color-card)] shadow-2xl text-center space-y-6">
+            <div className="w-16 h-16 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+              ✓
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold text-[var(--color-text)]">
+                Заявка принята!
+              </h3>
+              <p className="text-[var(--color-text-muted)] text-sm">
+                Спасибо за заказ! Менеджер свяжется с вами в ближайшее время для подтверждения.
+              </p>
+            </div>
+            <button
+              onClick={handleCloseModal}
+              className="w-full py-3.5 rounded-xl bg-[var(--color-accent)] text-[var(--color-bg)] font-bold text-sm hover:bg-[var(--color-hover-bt)] transition-colors cursor-pointer"
+            >
+              Понятно
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

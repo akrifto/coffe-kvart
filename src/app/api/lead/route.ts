@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-const DATA_DIR = path.join(process.cwd(), "src", "app", "data");
+const DATA_DIR = process.env.VERCEL 
+  ? path.join("/tmp", "data") 
+  : path.join(process.cwd(), "src", "app", "data");
 
 interface LeadData {
   name: string;
@@ -37,10 +39,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Проверяем, существует ли папка src/app/data, если нет — создаём
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+    // Проверка белорусских кодов)
+    const operatorCode = cleanPhone.slice(3, 5);
+    const validOperators = ["29", "44", "33", "25", "17"];
+    if (!validOperators.includes(operatorCode)) {
+      return NextResponse.json(
+        { message: "Некорректный код оператора Беларуси" },
+        { status: 400 }
+      );
     }
+
+// Проверка наличия папки (если нет - создать)
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 
     const now = Date.now();
     const TEN_MINUTES = 10 * 60 * 1000;
